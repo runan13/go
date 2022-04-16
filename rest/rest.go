@@ -31,6 +31,10 @@ type addBlockBody struct {
 	Message string
 }
 
+type errorResponse struct {
+	ErrorMessage string `json:"errorMessage"`
+}
+
 func handleDoc(rw http.ResponseWriter, r *http.Request) {
 	data := []urlDescription{
 		{
@@ -72,8 +76,12 @@ func handleBlock(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	height, err := strconv.Atoi(vars["height"])
 	utils.HandleErr(err)
-	block := blockchain.GetBlockchain().GetBlock(height)
-	json.NewEncoder(rw).Encode(block)
+	block, err := blockchain.GetBlockchain().GetBlock(height)
+	if err == blockchain.ErrorNotFound {
+		json.NewEncoder(rw).Encode(errorResponse{fmt.Sprint(err)})
+	} else {
+		json.NewEncoder(rw).Encode(block)
+	}
 }
 
 func Start(aPort int) {
