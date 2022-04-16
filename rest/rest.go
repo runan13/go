@@ -55,14 +55,12 @@ func handleDoc(rw http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	rw.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(data)
 }
 
 func handleBlocks(rw http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		rw.Header().Add("Content-Type", "application/json")
 		json.NewEncoder(rw).Encode(blockchain.GetBlockchain().AllBlocks())
 	case "POST":
 		var addBlockBody addBlockBody
@@ -84,8 +82,16 @@ func handleBlock(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func jsonContentTypeMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Add("Content-Type", "application/json")
+		next.ServeHTTP(rw, r)
+	})
+}
+
 func Start(aPort int) {
 	r := mux.NewRouter()
+	r.Use(jsonContentTypeMiddleware)
 	port = fmt.Sprintf(":%d", aPort)
 	r.HandleFunc("/", handleDoc).Methods("GET")
 	r.HandleFunc("/blocks", handleBlocks).Methods("GET", "POST")
